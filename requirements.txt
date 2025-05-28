@@ -1,0 +1,26 @@
+# UI Framework
+streamlit>=1.30.0,<2.0.0
+
+# Core Langchain and Community Components
+langchain>=0.1.0,<0.2.0
+langchain-community>=0.0.20,<0.1.0
+
+# LLM Interface
+litellm>=1.15.0,<2.0.0
+
+# Vector Database
+chromadb>=0.4.20,<0.5.0
+
+# Embedding Model & Transformers
+sentence-transformers>=2.2.0,<3.0.0
+transformers>=4.30.0,<5.0.0 # Often a co-dependency for sentence-transformers
+
+# Document Loaders Specific Dependencies
+pypdf>=3.15.0,<4.0.0 # For PDF loading (PyPDFLoader)
+unstructured>=0.10.0,<0.13.0 # For DOCX loading and potentially other formats
+python-docx>=1.0.0,<2.0.0 # For DOCX loading with UnstructuredWordDocumentLoader
+
+# Note: 'unstructured' can have additional system dependencies.
+# For example, you might need to install 'libreoffice' for some .doc files
+# or 'poppler-utils' for certain PDF processing tasks if not using PyPDFLoader directly for all PDFs.
+# Ensure Ollama is installed and running if you intend to use it locally.
