@@ -7,13 +7,13 @@ from langchain_core.documents import Document # Though not directly returned, it
 
 def load_txt_file(filepath: str) -> list[Document]:
     """Loads text from a .txt file into a list containing a single Document."""
-    loader = TextLoader(filepath)
+    loader = TextLoader(filepath, encoding='utf-8')
     return loader.load()
 
 def load_md_file(filepath: str) -> list[Document]:
     """Loads text from a .md file into a list containing a single Document."""
     # TextLoader can handle markdown files effectively.
-    loader = TextLoader(filepath)
+    loader = TextLoader(filepath, encoding='utf-8')
     return loader.load()
 
 def load_pdf_file(filepath: str) -> list[Document]:

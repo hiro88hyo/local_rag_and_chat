@@ -1,11 +1,11 @@
 import os
 import datetime
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
 # Define the path for the ChromaDB persistent storage
-CHROMA_DB_PATH = "./chroma_db"
+CHROMA_DB_PATH = ".\\chroma_db"
 # Define the embedding model
 EMBEDDING_MODEL = "pkshatech/GLuCoSE-base-ja"
 
@@ -78,15 +78,14 @@ def add_documents_to_store(documents: list[Document], vector_store: Chroma, file
             # The 'page' key might come from PyPDFLoader's output directly in doc_chunk.metadata
             "page": doc_chunk.metadata.get("page", None) 
         }
-        metadatas.append(chunk_metadata)
+        documents[i].metadata = chunk_metadata
         # Creating a unique ID for each chunk. Useful for updates/deletions later.
-        ids.append(f"{file_path}_chunk_{i}")
+        documents[i].id = f"{file_path}_chunk_{i}"
 
     # Add documents to the vector store
     # Note: Chroma's `add_documents` handles embedding generation internally if an embedding_function is set.
     # We pass the `Document` objects directly.
     if documents: # Ensure there are documents to add
-        vector_store.add_documents(documents=documents, metadatas=metadatas, ids=ids)
-        vector_store.persist() # Persist changes to disk
+        vector_store.add_documents(documents=documents) 
         return len(documents)
     return 0

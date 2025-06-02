@@ -9,6 +9,8 @@ from langchain_core.output_parsers import StrOutputParser # To parse LLM output
 from langchain_core.prompts import PromptTemplate # For creating dynamic prompts
 from llm.llm_interface import get_llm # Interface to LLM models
 
+import traceback
+
 # Initialize session state for conversation history if it doesn't exist
 # This helps maintain chat history across Streamlit reruns.
 if 'conversation_history' not in st.session_state:
@@ -82,8 +84,15 @@ def main():
                 errors_encountered = []
 
                 try:
-                    files_to_process = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
-                    
+#                    files_to_process = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
+
+                    files_to_process = []
+                    for root, dirs, files in os.walk(directory_path):
+                        for file_name in files:
+                            # os.path.join() を使ってフルパスを作成
+                            full_path = os.path.join(root, file_name)
+                            files_to_process.append(os.path.abspath(full_path)) # 絶対パスに変換して追加
+
                     if not files_to_process:
                         ingest_status_area.write("No files found in this directory.")
                     else:
@@ -133,6 +142,7 @@ def main():
                                     errors_encountered.append(f"{filename}: Chunks created but not added to store")
 
                             except Exception as e_file_proc: # NFQ3.2 - Catch errors during individual file load/chunk/add
+                                print(traceback.format_exc())
                                 st.error(f"Error processing file '{filename}': {e_file_proc}. Skipping this file.")
                                 errors_encountered.append(f"{filename}: {e_file_proc}")
                             
