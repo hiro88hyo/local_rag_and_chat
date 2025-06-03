@@ -8,5 +8,6 @@ wheels/
 
 # venv
 .venv/
-
 chroma_db/
+key/
+.env

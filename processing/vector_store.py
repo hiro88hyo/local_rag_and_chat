@@ -1,5 +1,8 @@
 import os
 import datetime
+import gc
+import time
+from contextlib import contextmanager
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
@@ -11,24 +14,41 @@ EMBEDDING_MODEL = "pkshatech/GLuCoSE-base-ja"
 
 import shutil # For deleting the directory
 
-# Initialize embeddings
+# Initialize embeddings once at startup (expensive operation)
 embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 
 def clear_vector_store(db_path=CHROMA_DB_PATH):
     """
     Deletes the ChromaDB persistent storage directory.
+    Forces garbage collection to release any lingering references.
     """
-    if os.path.exists(db_path):
+    if not os.path.exists(db_path):
+        return True, f"Vector store at {db_path} does not exist. No action taken."
+    
+    # Force garbage collection to release any lingering references
+    gc.collect()
+    # Give a brief moment for cleanup
+    time.sleep(0.5)
+    
+    try:
+        shutil.rmtree(db_path)
+        return True, f"Successfully deleted vector store at {db_path}"
+    except PermissionError as e:
+        # Try one more time after another garbage collection
+        gc.collect()
+        time.sleep(1.0)
         try:
             shutil.rmtree(db_path)
-            return True, f"Successfully deleted vector store at {db_path}"
-        except Exception as e:
-            return False, f"Error deleting vector store at {db_path}: {e}"
-    return True, f"Vector store at {db_path} does not exist. No action taken."
+            return True, f"Successfully deleted vector store at {db_path} (after retry)"
+        except Exception as e2:
+            return False, f"Error deleting vector store at {db_path}: {e2}. The directory may be in use by another process. Please close any applications using the database and try again, or delete the directory manually."
+    except Exception as e:
+        return False, f"Error deleting vector store at {db_path}: {e}"
 
 def get_vector_store(collection_name="default_collection"):
     """
     Initializes and returns a Chroma vector store.
+    Creates a new connection each time to avoid persistent file locks.
 
     Args:
         collection_name (str): Name of the collection within ChromaDB.
@@ -42,6 +62,28 @@ def get_vector_store(collection_name="default_collection"):
         persist_directory=CHROMA_DB_PATH
     )
     return vector_store
+
+@contextmanager
+def get_vector_store_context(collection_name="default_collection"):
+    """
+    Context manager for vector store to ensure proper cleanup.
+    
+    Args:
+        collection_name (str): Name of the collection within ChromaDB.
+    
+    Yields:
+        Chroma: An instance of the Chroma vector store.
+    """
+    vector_store = None
+    try:
+        vector_store = get_vector_store(collection_name)
+        yield vector_store
+    finally:
+        if vector_store is not None:
+            # Explicitly delete the vector store reference
+            del vector_store
+            # Force garbage collection to release resources
+            gc.collect()
 
 def add_documents_to_store(documents: list[Document], vector_store: Chroma, file_path: str):
     """
